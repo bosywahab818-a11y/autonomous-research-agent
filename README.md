@@ -1,14 +1,15 @@
 # Autonomous Research Agent
 
-An extensible research assistant built with **LangChain** and **LangGraph**. It researches a topic using web and academic sources, then turns the collected findings into structured research insights and practical innovation ideas.
+An extensible research assistant built with **LangChain** and **LangGraph**. It plans research, retrieves evidence from web and academic sources, synthesizes the findings, and generates practical innovation ideas grounded in that research.
 
 ## Main capabilities
 
 - **Multiple LLM providers:** Groq, Google Gemini, and Anthropic Claude.
-- **Research planning:** decomposes a broad topic into focused search questions.
+- **Research planning:** creates focused search angles for a broad topic.
 - **Multi-source research:** Tavily web search, arXiv academic search, and Wikipedia background search.
-- **Research-driven innovation:** generates 3–5 project/product ideas grounded in the findings already collected. It does not run a separate search or claim that an idea is globally novel.
+- **Research-driven innovation:** generates 3–5 project/product ideas from findings already collected. It does not run a separate search or claim global novelty.
 - **Healthcare-aware safeguards:** healthcare ideas are framed as research or decision-support concepts, not diagnoses or treatment recommendations.
+- **Context controls:** limits the number and size of retrieved results to reduce oversized LLM requests.
 - **Secret-safe configuration:** API keys are loaded from environment variables and are not stored in source files.
 
 ## Architecture
@@ -20,13 +21,12 @@ User topic
 LangGraph ReAct research agent
    |
    +--> Query planner
-   |
-   +--> Tavily web search
-   +--> arXiv academic search
-   +--> Wikipedia background search
+   +--> Tavily web search (bounded results)
+   +--> arXiv academic search (bounded results)
+   +--> Wikipedia background search (optional)
    |
    v
-Research synthesis
+Concise research synthesis
    |
    v
 Innovation & Idea Generator
@@ -34,8 +34,6 @@ Innovation & Idea Generator
    v
 Research report + practical ideas
 ```
-
-The agent is instructed to plan searches, collect evidence from multiple sources, synthesize the findings, and then call the innovation tool with the research it has gathered.
 
 ## Project structure
 
@@ -51,8 +49,10 @@ autonomous-research-agent/
 ├── tests/
 │   ├── test_innovation_tool.py
 │   └── test_research_tools.py
+├── .github/workflows/tests.yml
 ├── .env.example
 ├── .gitignore
+├── pytest.ini
 ├── requirements.txt
 └── README.md
 ```
@@ -109,17 +109,23 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Open `.env` and add:
-- The key for your chosen LLM provider.
-- Your `TAVILY_API_KEY`.
+Open `.env` and add the key for your chosen LLM provider and your `TAVILY_API_KEY`. The default Groq output allowance is 1500 tokens to leave more room for the prompt and retrieved evidence under shared token-per-minute limits.
 
-Choose your provider with `LLM_PROVIDER=groq`, `google`, or `anthropic`. The model names can be overridden in `.env`.
+You can tune these settings in `.env`:
+
+| Variable | Default | Purpose |
+|---|---:|---|
+| `TAVILY_MAX_RESULTS` | 2 | Web results per search |
+| `WEB_RESULT_MAX_CHARS` | 2200 | Maximum web tool output |
+| `ARXIV_RESULT_MAX_CHARS` | 1800 | Maximum arXiv tool output |
+| `WIKIPEDIA_RESULT_MAX_CHARS` | 900 | Maximum Wikipedia tool output |
+| `LLM_MAX_TOKENS` | 1500 | Maximum generated output tokens |
+
+Choose your provider with `LLM_PROVIDER=groq`, `google`, or `anthropic`. Model names can be overridden in `.env`.
 
 **Never commit your `.env` file or expose API keys in notebooks, screenshots, or source code.** The `.gitignore` excludes it.
 
 ## 4. Run the agent
-
-Run the requested healthcare example:
 
 ```bash
 python -m src.agent "Generative AI in Healthcare"
@@ -131,42 +137,33 @@ Or launch interactive mode:
 python -m src.agent
 ```
 
-The agent will research the topic and produce a report with an innovation section. The exact number and content of ideas depend on the findings retrieved and the selected LLM.
+The agent plans searches, uses a bounded number of web and academic searches, synthesizes the retrieved findings, and calls the innovation tool.
 
 ## 5. Innovation & Idea Generator
 
-The custom tool receives:
-- The original research topic.
-- A synthesis of the research findings collected by the agent.
+The custom tool receives the original topic and a concise synthesis of research findings. It generates 3–5 distinct ideas, each with the problem, proposed solution, research inspiration, suggested technologies, implementation outline, potential impact, feasibility, and risks. It also selects a top recommendation and lists assumptions requiring validation.
 
-For each idea, it returns:
-1. Title
-2. Problem addressed
-3. Proposed solution
-4. Research inspiration
-5. Suggested technologies
-6. Implementation outline
-7. Potential impact
-8. Feasibility
-9. Risks and limitations
-
-It also selects a top recommendation and lists assumptions that need validation. Ideas are proposals, not proof of novelty, feasibility, or clinical effectiveness.
+Ideas are proposals, not proof of novelty, feasibility, or clinical effectiveness.
 
 ## 6. Run tests
 
-The tests use a fake LLM and do not require API keys:
+From the repository root, run:
 
 ```bash
 pytest -q
 ```
 
+The included `pytest.ini` adds the project root to the Python import path. Tests use a fake LLM where applicable and do not require API keys.
+
 ## Research quality and limitations
 
-The query planner encourages complementary searches across multiple sources. Results from the same URL or title are de-duplicated where applicable. Search ranking and LLM synthesis can still miss important work, misinterpret sources, or produce incomplete conclusions. Check original papers and trusted sources before relying on important claims.
+Retrieved text is bounded to help control model context size. This is a practical safeguard, not a guarantee that every provider request will fit its rate limits; quotas vary by model and account tier. If a provider still reports a token-per-minute limit, lower `LLM_MAX_TOKENS` or the per-tool result limits in `.env`.
+
+Exact repeated text blocks are removed. This does not guarantee that semantically similar results or different URLs describing the same work will be deduplicated. Search ranking and LLM synthesis can still miss important work, misinterpret sources, or produce incomplete conclusions. Check original papers and trusted sources before relying on important claims.
 
 arXiv includes preprints that may not have undergone peer review. Wikipedia is used for introductory context, not as a substitute for primary research.
 
-For healthcare topics, generated concepts must undergo expert review, privacy/security assessment, and appropriate clinical validation before real-world use. This project is for research and educational purposes, not medical advice.
+For healthcare topics, generated concepts require expert review, privacy/security assessment, and appropriate clinical validation before real-world use. This project is for research and educational purposes, not medical advice.
 
 ## License
 
