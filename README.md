@@ -1,14 +1,41 @@
 # Autonomous Research Agent
 
-An extensible research assistant built with LangChain and LangGraph. It combines web search, academic-paper discovery, background knowledge, and a custom evidence-auditing tool to produce structured research reports.
+An extensible research assistant built with **LangChain** and **LangGraph**. It researches a topic using web and academic sources, then turns the collected findings into structured research insights and practical innovation ideas.
 
-## Features
+## Main capabilities
 
-- **Multiple LLM providers:** Groq, Google Gemini, and Anthropic Claude. Select a provider with `LLM_PROVIDER`.
-- **Multi-angle research:** an LLM-powered query planner creates focused sub-queries before retrieval.
-- **Multiple sources:** Tavily web search, arXiv, and Wikipedia.
-- **Evidence auditing:** a custom tool checks report claims against retrieved source excerpts and labels them Supported, Partially supported, or Unsupported. Treat this as an assistive review, not a guarantee of truth.
-- **Secret-safe configuration:** API keys are read from environment variables and are never stored in source files.
+- **Multiple LLM providers:** Groq, Google Gemini, and Anthropic Claude.
+- **Research planning:** decomposes a broad topic into focused search questions.
+- **Multi-source research:** Tavily web search, arXiv academic search, and Wikipedia background search.
+- **Research-driven innovation:** generates 3–5 project/product ideas grounded in the findings already collected. It does not run a separate search or claim that an idea is globally novel.
+- **Healthcare-aware safeguards:** healthcare ideas are framed as research or decision-support concepts, not diagnoses or treatment recommendations.
+- **Secret-safe configuration:** API keys are loaded from environment variables and are not stored in source files.
+
+## Architecture
+
+```text
+User topic
+   |
+   v
+LangGraph ReAct research agent
+   |
+   +--> Query planner
+   |
+   +--> Tavily web search
+   +--> arXiv academic search
+   +--> Wikipedia background search
+   |
+   v
+Research synthesis
+   |
+   v
+Innovation & Idea Generator
+   |
+   v
+Research report + practical ideas
+```
+
+The agent is instructed to plan searches, collect evidence from multiple sources, synthesize the findings, and then call the innovation tool with the research it has gathered.
 
 ## Project structure
 
@@ -19,76 +46,128 @@ autonomous-research-agent/
 │   ├── config.py
 │   ├── llm_factory.py
 │   ├── research_tools.py
-│   ├── evidence_auditor.py
+│   ├── innovation_tool.py
 │   └── agent.py
 ├── tests/
-│   └── test_evidence_auditor.py
+│   ├── test_innovation_tool.py
+│   └── test_research_tools.py
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
-## Setup
+## 1. Requirements
 
-Python 3.10+ is recommended.
+- Python 3.10 or newer
+- An API key for one supported LLM provider
+- A Tavily API key for web search
+
+arXiv and Wikipedia searches do not require API keys.
+
+## 2. Installation
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/bosywahab818-a11y/autonomous-research-agent.git
 cd autonomous-research-agent
+```
+
+Create and activate a virtual environment:
+
+**Windows PowerShell**
+```powershell
 python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
+.venv\Scripts\Activate.ps1
+```
+
+**macOS / Linux**
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Copy `.env.example` to `.env` and add the keys for the provider and tools you intend to use. Never commit `.env`.
+## 3. Configure API keys
 
-```env
-LLM_PROVIDER=groq
-GROQ_API_KEY=...
-GROQ_MODEL=openai/gpt-oss-120b
-TAVILY_API_KEY=...
+Copy the example environment file:
+
+**Windows PowerShell**
+```powershell
+Copy-Item .env.example .env
 ```
 
-Optional provider settings are documented in `.env.example`. The app requires the API key for the selected LLM provider and a Tavily key for web search. arXiv and Wikipedia do not require API keys.
+**macOS / Linux**
+```bash
+cp .env.example .env
+```
 
-## Run
+Open `.env` and add:
+- The key for your chosen LLM provider.
+- Your `TAVILY_API_KEY`.
+
+Choose your provider with `LLM_PROVIDER=groq`, `google`, or `anthropic`. The model names can be overridden in `.env`.
+
+**Never commit your `.env` file or expose API keys in notebooks, screenshots, or source code.** The `.gitignore` excludes it.
+
+## 4. Run the agent
+
+Run the requested healthcare example:
 
 ```bash
-python -m src.agent "Quantum Error Correction breakthroughs in 2025"
+python -m src.agent "Generative AI in Healthcare"
 ```
 
-Or run interactively:
+Or launch interactive mode:
 
 ```bash
 python -m src.agent
 ```
 
-## Switch LLM provider
+The agent will research the topic and produce a report with an innovation section. The exact number and content of ideas depend on the findings retrieved and the selected LLM.
 
-Set `LLM_PROVIDER` to one of `groq`, `google`, or `anthropic`. Set the matching API key and optionally override the model name with `GROQ_MODEL`, `GOOGLE_MODEL`, or `ANTHROPIC_MODEL`.
+## 5. Innovation & Idea Generator
 
-## Research workflow
+The custom tool receives:
+- The original research topic.
+- A synthesis of the research findings collected by the agent.
 
-1. The query planner expands the topic into complementary research questions.
-2. The agent searches web, arXiv, and Wikipedia as appropriate.
-3. Retrieved results are normalized and de-duplicated by URL/title before being returned to the agent.
-4. The agent synthesizes a report with source references.
-5. The evidence auditor compares report claims with the evidence excerpts gathered during the run.
+For each idea, it returns:
+1. Title
+2. Problem addressed
+3. Proposed solution
+4. Research inspiration
+5. Suggested technologies
+6. Implementation outline
+7. Potential impact
+8. Feasibility
+9. Risks and limitations
 
-Search quality is improved through query decomposition, multiple focused searches, source diversity, de-duplication, and evidence review. Retrieval ranking is not a substitute for checking the original source.
+It also selects a top recommendation and lists assumptions that need validation. Ideas are proposals, not proof of novelty, feasibility, or clinical effectiveness.
 
-## Security
+## 6. Run tests
 
-- Do not paste API keys into notebooks, source code, README files, screenshots, or GitHub commits.
-- If a key was previously exposed, revoke it and generate a new one.
-- For Colab, store credentials in **Secrets** and read them with `google.colab.userdata.get(...)`.
+The tests use a fake LLM and do not require API keys:
 
-## Limitations
+```bash
+pytest -q
+```
 
-The evidence auditor is an LLM-assisted reviewer. It can miss unsupported statements or incorrectly judge evidence. Verify important claims and citations manually, especially for medical, legal, financial, or safety-critical research. arXiv results may be preprints and are not necessarily peer-reviewed.
+## Research quality and limitations
+
+The query planner encourages complementary searches across multiple sources. Results from the same URL or title are de-duplicated where applicable. Search ranking and LLM synthesis can still miss important work, misinterpret sources, or produce incomplete conclusions. Check original papers and trusted sources before relying on important claims.
+
+arXiv includes preprints that may not have undergone peer review. Wikipedia is used for introductory context, not as a substitute for primary research.
+
+For healthcare topics, generated concepts must undergo expert review, privacy/security assessment, and appropriate clinical validation before real-world use. This project is for research and educational purposes, not medical advice.
 
 ## License
 
-Add a license if you want to specify reuse permissions.
+No license has been added. Add one if you want to define reuse permissions.
