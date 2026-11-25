@@ -7,7 +7,7 @@ def deduplicate_text_results(text: str) -> str:
     """Remove repeated result blocks while preserving their original order."""
     if not text:
         return text
-    blocks = [part.strip() for part in text.split("\\n\\n") if part.strip()]
+    blocks = [part.strip() for part in text.split("\n\n") if part.strip()]
     seen = set()
     unique = []
     for block in blocks:
@@ -15,7 +15,7 @@ def deduplicate_text_results(text: str) -> str:
         if normalized not in seen:
             seen.add(normalized)
             unique.append(block)
-    return "\\n\\n".join(unique)
+    return "\n\n".join(unique)
 
 
 def build_research_tools(llm):
@@ -42,7 +42,7 @@ def build_research_tools(llm):
         prompt = (
             "Create 4-6 concise, non-overlapping research queries for this topic. "
             "Cover fundamentals, recent advances, applications, limitations, and "
-            "open challenges. Return one query per line, without commentary.\\n\\n"
+            "open challenges. Return one query per line, without commentary.\n\n"
             f"Topic: {topic}"
         )
         answer = llm.invoke(prompt)
