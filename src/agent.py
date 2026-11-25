@@ -45,7 +45,7 @@ def run_research(topic: str) -> str:
     final_message = messages[-1]
     content = getattr(final_message, "content", str(final_message))
     if isinstance(content, list):
-        return "\\n".join(
+        return "\n".join(
             item.get("text", str(item)) if isinstance(item, dict) else str(item)
             for item in content
         )
@@ -59,7 +59,7 @@ def main():
     topic = " ".join(args.topic).strip() or input("Enter a research topic: ").strip()
     if not topic:
         parser.error("Please provide a research topic.")
-    print(f"\\n# Autonomous Research Report: {topic}\\n")
+    print(f"\n# Autonomous Research Report: {topic}\n")
     print(run_research(topic))
 
 
