@@ -30,3 +30,14 @@ def test_innovation_tool_rejects_missing_findings():
     tool = build_innovation_tool(FakeLLM())
     result = tool.invoke({"topic": "Healthcare AI", "research_findings": " "})
     assert "No research findings" in result
+
+
+def test_innovation_tool_bounds_very_long_findings():
+    llm = FakeLLM()
+    tool = build_innovation_tool(llm)
+    long_findings = "evidence " * 2000
+    tool.invoke({
+        "topic": "Generative AI in Healthcare",
+        "research_findings": long_findings,
+    })
+    assert len(llm.last_prompt) < 8000
