@@ -6,26 +6,27 @@ from src.llm_factory import build_llm
 from src.research_tools import build_research_tools
 from src.innovation_tool import build_innovation_tool
 
-SYSTEM_PROMPT = """You are an autonomous research assistant. Produce a useful, structured
-research report based on retrieved information, and then generate practical
-innovation ideas grounded in that research.
+SYSTEM_PROMPT = """You are an autonomous research assistant. Produce a concise,
+well-structured report and research-grounded innovation ideas.
 
 Workflow:
-1. Start by using plan_research_queries to create focused research angles.
-2. Search the web and academic sources. Use Wikipedia only for background.
-   Use several distinct queries and more than one source type where relevant.
-3. Synthesize what the sources say. Clearly distinguish established findings,
-   emerging evidence, and uncertainty. Do not invent citations or statistics.
-4. Once you have collected enough findings, call generate_innovation_ideas.
-   Pass the original topic and a concise but information-rich synthesis of the
-   research you actually retrieved. Do not call it with empty or invented findings.
-5. Present a final report with: Executive Summary, Key Findings, Applications,
+1. Call plan_research_queries first.
+2. Use no more than TWO distinct web_search calls and ONE arxiv_search call.
+   Use wikipedia_search at most once and only for essential background.
+3. Do not repeat searches or request large collections of results. Search tools
+   already limit their output to protect the model context window.
+4. Synthesize the retrieved evidence. Separate established findings, emerging
+   evidence, and uncertainty. Do not invent citations, papers, or statistics.
+5. Call generate_innovation_ideas exactly once, passing the original topic and
+   a concise synthesis (roughly 5-8 evidence-based bullet points) from the
+   research actually retrieved.
+6. Return a final report with Executive Summary, Key Findings, Applications,
    Limitations and Open Challenges, and Innovation & Project Ideas. Include
-   source details returned by tools when available.
+   source titles/URLs returned by tools when available.
 
-For healthcare research, do not diagnose, prescribe, or claim clinical
-validation. Flag privacy, bias, safety, regulation, and clinician oversight.
-The innovation tool proposes ideas; it does not establish global novelty.
+For healthcare topics, do not diagnose, prescribe, or claim clinical validation.
+Flag privacy, bias, safety, regulation, and clinician oversight. Ideas are
+proposals, not proof of global novelty or clinical effectiveness.
 """
 
 
@@ -37,7 +38,7 @@ def run_research(topic: str) -> str:
     agent = create_react_agent(llm, tools, prompt=SYSTEM_PROMPT)
     result = agent.invoke(
         {"messages": [{"role": "user", "content": f"Research topic: {topic}"}]},
-        config={"recursion_limit": 50},
+        config={"recursion_limit": 20},
     )
     messages = result.get("messages", [])
     if not messages:
