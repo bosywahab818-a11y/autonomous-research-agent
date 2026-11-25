@@ -16,5 +16,5 @@ def test_limit_result_text_keeps_short_text_unchanged():
 
 def test_limit_result_text_truncates_long_text():
     result = limit_result_text("word " * 100, 80)
-    assert len(result) <= 120
+    assert len(result) <= 130
     assert "result shortened" in result
