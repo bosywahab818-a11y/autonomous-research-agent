@@ -68,10 +68,7 @@ def build_innovation_tool(llm):
                 "before generating ideas."
             )
 
-        prompt = INNOVATION_PROMPT.format(
-            topic=topic.strip(),
-            research_findings=research_findings.strip(),
-        )
+        # Keep the second LLM call bounded even if the agent passes raw tool output.\n        compact_findings = research_findings.strip()[:6000]\n        prompt = INNOVATION_PROMPT.format(\n            topic=topic.strip(),\n            research_findings=compact_findings,\n        )
         response = llm.invoke(prompt)
         content = getattr(response, "content", response)
         if isinstance(content, str):
