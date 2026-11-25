@@ -31,5 +31,7 @@ def get_settings():
         "model": MODEL_NAMES[PROVIDER],
         "api_key": api_key,
         "temperature": float(os.getenv("LLM_TEMPERATURE", "0.2")),
-        "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "4096")),
+        # Leave room for prompt, tool descriptions, and retrieved evidence
+        # under providers with a shared input/output tokens-per-minute quota.
+        "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "1500")),
     }
